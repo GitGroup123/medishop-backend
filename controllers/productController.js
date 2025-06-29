@@ -15,9 +15,6 @@ export const getProducts = async (req, res) => {
 export const createProduct = async (req, res) => {
   try {
     console.log("📥 Incoming product save request...");
-    console.log("BODY:", req.body);
-    console.log("FILES:", req.files);
-
     const {
       name,
       type,
@@ -30,14 +27,17 @@ export const createProduct = async (req, res) => {
       variations
     } = req.body;
 
-    // Parse variations if sent as string
-    const parsedVariations = variations ? JSON.parse(variations) : [];
+    // Parse arrays safely
+    const parsedCategories = typeof categories === "string" ? JSON.parse(categories) : categories || [];
+    const parsedTags = typeof tags === "string" ? JSON.parse(tags) : tags || [];
+    const parsedVariations = typeof variations === "string" ? JSON.parse(variations) : variations || [];
 
-    const mainImage = req.files?.mainImage?.[0]?.filename || '';
+    // Images
+    const mainImage = req.files?.mainImage?.[0]?.filename || "";
     const galleryImages = req.files?.gallery?.map((f) => f.filename) || [];
     const variationImages = req.files?.variationImages || [];
 
-    // Attach images to the variation objects
+    // Map each variant with its image (matched by index)
     const finalVariations = parsedVariations.map((variant, i) => ({
       ...variant,
       image: variationImages[i]?.filename || null
@@ -50,20 +50,22 @@ export const createProduct = async (req, res) => {
       description,
       price,
       salePrice,
-      categories: JSON.parse(categories || '[]'),
-      tags: JSON.parse(tags || '[]'),
+      categories: parsedCategories,
+      tags: parsedTags,
       image: mainImage,
       gallery: galleryImages,
       variations: finalVariations
     });
 
     const saved = await newProduct.save();
+    console.log("✅ Product saved:", saved.name);
     res.status(201).json(saved);
   } catch (error) {
     console.error("❌ Product creation failed:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // Delete a product
 export const deleteProduct = async (req, res) => {

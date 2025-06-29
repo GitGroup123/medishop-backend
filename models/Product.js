@@ -11,7 +11,6 @@ const productSchema = new mongoose.Schema({
     enum: ['In Stock', 'Out of Stock'],
     default: 'In Stock',
   },
-  sku: String,
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
   attributes: {
     size: String,
@@ -19,6 +18,21 @@ const productSchema = new mongoose.Schema({
   },
   image: String,
   gallery: [String],
+   variations: [
+    {
+      sku: String,
+      barcode: String,
+      price: Number,
+      salePrice: Number,
+      stock: Number,
+      image: String,
+      stockStatus: {
+        type: String,
+        enum: ['in_stock', 'out_of_stock', 'backorder'],
+        default: 'in_stock'
+      },
+       attributes: mongoose.Schema.Types.Mixed,
+    }]
 }, {
   timestamps: true,
 });
