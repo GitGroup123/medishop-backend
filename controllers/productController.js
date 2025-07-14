@@ -46,7 +46,7 @@ export const createProduct = async (req, res) => {
     const newProduct = new Product({
       name,
       type,
-      shortDesc,
+      shortDesc, 
       description,
       price,
       salePrice,
@@ -93,6 +93,7 @@ export const getProductById = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     console.log("✏️ Updating product...");
+
     const {
       name,
       type,
@@ -110,7 +111,7 @@ export const updateProduct = async (req, res) => {
     const parsedVariations = variations ? JSON.parse(variations) : [];
 
     const mainImage = req.files?.mainImage?.[0]?.filename;
-    const galleryImages = req.files?.gallery?.map((f) => f.filename);
+    const galleryImages = req.files?.gallery?.map((f) => f.filename) || [];
     const variationImages = req.files?.variationImages || [];
 
     const finalVariations = parsedVariations.map((variant, i) => ({
@@ -118,31 +119,34 @@ export const updateProduct = async (req, res) => {
       image: variationImages[i]?.filename || variant.image || null,
     }));
 
-    const updated = await Product.findByIdAndUpdate(
-      req.params.id,
-      {
-        name,
-        type,
-        shortDesc,
-        description,
-        price,
-        salePrice,
-        categories: parsedCategories,
-        tags: parsedTags,
-        ...(mainImage && { image: mainImage }),
-        ...(galleryImages && { gallery: galleryImages }),
-        variations: finalVariations,
-      },
-      { new: true }
-    );
+    const updateData = {
+      name,
+      type,
+      shortDesc,
+      description,
+      price,
+      salePrice,
+      categories: parsedCategories,
+      tags: parsedTags,
+      variations: finalVariations,
+    };
+
+    if (mainImage) updateData.image = mainImage;
+    if (galleryImages.length > 0) updateData.gallery = galleryImages;
+
+    const updated = await Product.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    });
 
     if (!updated) return res.status(404).json({ message: "Product not found" });
+
     res.status(200).json(updated);
   } catch (error) {
     console.error("❌ Product update failed:", error);
     res.status(500).json({ message: "Update failed", error: error.message });
   }
 };
+
 
 export const getAllProducts = async (req, res) => {
   try {
@@ -157,3 +161,21 @@ export const getAllProducts = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+export const getProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id)
+      .populate('categories')
+      .populate('tags');
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
